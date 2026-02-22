@@ -1,0 +1,26 @@
+# Сгенерированные файлы при компиляции
+/target/
+**/*.rs.bk
+
+# Файл с фиксацией версий зависимостей
+Cargo.lock
+
+# Директории с документацией
+/doc/
+
+# Файлы редакторов и IDE
+/.idea/
+/.vscode/
+/*.iml
+/*.swp
+/*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
