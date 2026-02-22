@@ -16,6 +16,10 @@ Cargo.lock
 /*.swo
 *~
 
+# Локальные конфиги Cargo
+.cargo/config.toml
+.cargo/credentials
+
 # OS generated files
 .DS_Store
 .DS_Store?

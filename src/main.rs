@@ -5,6 +5,8 @@ mod handlers;
 mod server;
 mod docs;
 
+use webbrowser; 
+
 use std::thread;
 use server::run_server;
 
@@ -16,7 +18,7 @@ fn open_browser() {
     println!("🌐 Открываю браузер...");
     let url = "http://localhost:3000/swagger-ui";
     
-    if let Err(e) = open::that(url) {
+    if let Err(e) = webbrowser::open(url) {
         eprintln!("⚠️  Не удалось автоматически открыть браузер: {}", e);
         println!("🔗 Пожалуйста, откройте вручную: {}", url);
     } else {
@@ -46,7 +48,7 @@ async fn main() {
     println!("╚════════════════════════════════════╝");
     
     print_instructions();
-    
+
     // Запускаем открытие браузера в отдельном потоке
     thread::spawn(|| {
         open_browser();

@@ -7,7 +7,6 @@ edition = "2024"
 axum = "0.8.8"
 clipboard = "0.5.0"
 colored = "3.1.1"
-open = "5.3.3"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 tokio = { version = "1.49.0", features = ["full"] }
@@ -15,9 +14,18 @@ tower-http = { version = "0.6.8", features = ["cors", "fs"] }
 tracing = "0.1.44"
 tracing-subscriber = "0.3.22"
 traffic_core = { version = "0.1.0", path = "../traffic-core" }
-tray-icon = "0.21.3"
 utoipa = { version = "5.4.0", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
 webbrowser = "1.1.0"
-winit = "0.30.12"
 
+# Настройки оптимизации
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+incremental = false
+
+[target."cfg(windows)".dependencies]
+winapi = { version = "0.3.9", features = ["minwindef", "profileapi", "sysinfoapi"] }
