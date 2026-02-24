@@ -5,12 +5,15 @@ mod handlers;
 mod server;
 mod docs;
 
+// use utoipa_swagger_ui::Config;
 use webbrowser; 
 
 use std::thread;
 use server::run_server;
 use std::process;  // <-- Этого импорта не хватало
 use single_instance::SingleInstance;
+
+use crate::server::Config;
 
 
 /// Проверяет, что приложение запущено в единственном экземпляре
@@ -47,14 +50,14 @@ fn ensure_single_instance() -> SingleInstance {
 
 
 /// Открывает браузер после запуска сервера
-fn open_browser() {
+fn open_browser(url: String) {
+
     // Даём серверу секунду на запуск
     thread::sleep(std::time::Duration::from_secs(1));
     
     println!("🌐 Открываю браузер...");
-    let url = "http://localhost:3000/swagger-ui";
-    
-    if let Err(e) = webbrowser::open(url) {
+
+    if let Err(e) = webbrowser::open(&url) {
         eprintln!("⚠️  Не удалось автоматически открыть браузер: {}", e);
         println!("🔗 Пожалуйста, откройте вручную: {}", url);
     } else {
@@ -62,20 +65,22 @@ fn open_browser() {
     }
 }
 
-fn print_instructions() {
+
+fn print_instructions(config: &Config) {  // ПЕРЕДАЁМ config
     println!("\n{}", "═".repeat(60));
     println!("📋 ИНСТРУКЦИЯ ПО ИСПОЛЬЗОВАНИЮ:");
     println!("{}", "─".repeat(60));
-    println!("🌐 Swagger UI:  http://localhost:3000/swagger-ui");
-    println!("📊 Проверка:    http://localhost:3000/health");
-    println!("ℹ️  Инфо:        http://localhost:3000/info");
-    println!("🔧 Генерация:   POST http://localhost:3000/generate");
-    println!("🔧 Парсинг:     POST http://localhost:3000/parse");
+
+    println!("🌐 Swagger UI:  http://{}:{}/swagger-ui", config.host, config.port);
+    println!("📊 Проверка:    http://{}:{}/health", config.host, config.port);
+    println!("ℹ️  Инфо:        http://{}:{}/info", config.host, config.port);  // исправил двойной слеш
+
     println!("{}", "─".repeat(60));
     println!("🛑 Для остановки сервера нажмите Ctrl+C");
     println!("{}", "═".repeat(60));
     println!(); // Пустая строка для красоты
 }
+
 
 #[tokio::main]
 async fn main() {
@@ -84,18 +89,30 @@ async fn main() {
     println!("╚════════════════════════════════════╝");
     
 
+    let instance = SingleInstance::new("traffic-core-api").unwrap();
+    if !instance.is_single() {
+        eprintln!("❌ Программа уже запущена!");
+        eprintln!("   Можно запустить только один экземпляр");
+        std::process::exit(1);
+    }
+
+    let config = Config::from_env();  // создаём конфиг
+
+
     // Проверяем единственный экземпляр
-    let _guard = ensure_single_instance();
+    // let _guard = ensure_single_instance();
     println!();
 
 
-    print_instructions();
+    print_instructions(&config);  // передаём ссылку на config
+
+    let url = format!("http://{}:{}/swagger-ui", config.host, config.port);
 
     // Запускаем открытие браузера в отдельном потоке
     thread::spawn(|| {
-        open_browser();
+        open_browser(url);
     });
     
     // Запускаем сервер
-    run_server().await;
+    run_server(config).await;
 }

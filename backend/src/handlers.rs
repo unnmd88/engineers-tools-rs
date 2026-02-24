@@ -11,15 +11,6 @@ use traffic_core::conditions::{Parser, generate_condition};
 use crate::models::{ConditionRequest, GenerateResponse, ParseResponse, ErrorResponse};
 use crate::server::AppState;
 
-// #[utoipa::path(
-//     get,
-//     path = "/",
-//     responses((status = 200, description = "Приветственное сообщение", body = String)),
-//     tag = "system"
-// )]
-// pub async fn root() -> &'static str {
-//     "Traffic Core API"
-// }
 
 #[utoipa::path(
     get,
