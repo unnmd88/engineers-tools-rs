@@ -1,9 +1,15 @@
 # Rust
 /target
 **/*.rs.bk
-Cargo.lock
 *.wasm
 
+# Cargo
+.cargo/
+**/.cargo/
+
+# Build
+target/
+**/target/
 
 # Директории с документацией
 /doc/
