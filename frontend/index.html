@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Traffic Core API</title>
+    <style>
+        body { font-family: Arial; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .endpoint { margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 5px; }
+        button { padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        input { padding: 8px; width: 300px; margin-right: 10px; border: 1px solid #ddd; border-radius: 3px; }
+        pre { background: #333; color: #fff; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        h1 { color: #333; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 15px; color: #4CAF50; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <h1>🚦 Traffic Tools</h1>
+    
+    <div class="nav">
+        <a href="/swagger-ui" target="_blank">📚 Swagger UI</a>
+        <a href="/health" target="_blank">💓 Health Check</a>
+    </div>
+    
+    <div class="endpoint">
+        <h3>GET /info</h3>
+        <button onclick="callApi('/info')">Тест</button>
+    </div>
+    
+    <div class="endpoint">
+        <h3>POST /generate</h3>
+        <input id="generateInput" value="(A&B)|C" size="30">
+        <button onclick="callGenerate()">Сгенерировать</button>
+    </div>
+    
+    <div class="endpoint">
+        <h3>POST /parse</h3>
+        <input id="parseInput" value="(A&B)|C" size="30">
+        <button onclick="callParse()">Разобрать</button>
+    </div>
+    
+    <pre id="result">Нажми кнопку для теста API</pre>
+    
+    <script>
+        async function callApi(endpoint) {
+            const result = document.getElementById('result');
+            result.textContent = '⏳ Загрузка...';
+            
+            try {
+                const response = await fetch(endpoint);
+                const data = await response.json();
+                result.textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                result.textContent = '❌ Ошибка: ' + e.message;
+            }
+        }
+        
+        async function callGenerate() {
+            const input = document.getElementById('generateInput').value;
+            const result = document.getElementById('result');
+            result.textContent = '⏳ Загрузка...';
+            
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({input})
+                });
+                const data = await response.json();
+                result.textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                result.textContent = '❌ Ошибка: ' + e.message;
+            }
+        }
+        
+        async function callParse() {
+            const input = document.getElementById('parseInput').value;
+            const result = document.getElementById('result');
+            result.textContent = '⏳ Загрузка...';
+            
+            try {
+                const response = await fetch('/parse', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({input})
+                });
+                const data = await response.json();
+                result.textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                result.textContent = '❌ Ошибка: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>

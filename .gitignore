@@ -1,9 +1,9 @@
-# Сгенерированные файлы при компиляции
-/target/
+# Rust
+/target
 **/*.rs.bk
-
-# Файл с фиксацией версий зависимостей
 Cargo.lock
+*.wasm
+
 
 # Директории с документацией
 /doc/
@@ -15,6 +15,15 @@ Cargo.lock
 /*.swp
 /*.swo
 *~
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+/logs/
 
 # Локальные конфиги Cargo
 .cargo/config.toml
