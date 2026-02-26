@@ -88,7 +88,8 @@ async fn main() {
     println!("║     Traffic Core API v1.0.0        ║");
     println!("╚════════════════════════════════════╝");
     
-
+    let config = Config::from_env();  // создаём конфиг
+    
     let instance = SingleInstance::new("traffic-core-api").unwrap();
     if !instance.is_single() {
         eprintln!("❌ Программа уже запущена!");
@@ -96,7 +97,7 @@ async fn main() {
         std::process::exit(1);
     }
 
-    let config = Config::from_env();  // создаём конфиг
+    
 
 
     // Проверяем единственный экземпляр

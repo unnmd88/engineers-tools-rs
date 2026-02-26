@@ -2,41 +2,140 @@
 <html>
 <head>
     <title>Traffic Tools</title>
-    <style>
-        body { font-family: Arial; padding: 20px; max-width: 800px; margin: 0 auto; }
-        .menu { margin-bottom: 20px; }
-        .menu button { 
-            padding: 10px 20px; 
-            margin-right: 10px; 
-            background: #4CAF50; 
-            color: white; 
-            border: none; 
-            border-radius: 3px; 
-            cursor: pointer; 
-        }
-        .menu button:hover { background: #45a049; }
-        .page { display: none; }
-        .page.active { display: block; }
-        pre { background: #333; color: #fff; padding: 15px; border-radius: 5px; }
-    </style>
-    <!-- CONFIG -->  <!-- Сюда вставится конфиг с адресом -->
+    <link rel="stylesheet" href="/css/main.css">
+    <!-- CONFIG -->
 </head>
 <body>
-    <h1>🚦 Traffic Tools</h1>
-    
-    <div class="menu">
-        <button onclick="showPage('info')">ℹ️ Info</button>
-        <button onclick="showPage('generate')">⚙️ Generate</button>
-        <button onclick="showPage('parse')">🔍 Parse</button>
+    <div class="app">
+        <header>
+            <h1>🚦 Traffic Tools</h1>
+        </header>
+        
+        <div class="main-layout">
+            <!-- ЛЕВАЯ КОЛОНКА - МЕНЮ -->
+            <aside class="sidebar">
+                <!-- ОБЩИЕ ФИЧИ -->
+                <div class="menu-section">
+                    <div class="menu-title">📋 ОБЩИЕ ФИЧИ</div>
+                    <div class="menu-items">
+                        <button onclick="showCommonFeature('info')" data-common="info" class="menu-item">
+                            <span class="menu-icon">ℹ️</span>
+                            <span class="menu-label">Info</span>
+                        </button>
+                        <button onclick="showCommonFeature('stats')" data-common="stats" class="menu-item">
+                            <span class="menu-icon">📊</span>
+                            <span class="menu-label">Statistics</span>
+                        </button>
+                        <button onclick="showCommonFeature('config')" data-common="config" class="menu-item">
+                            <span class="menu-icon">⚙️</span>
+                            <span class="menu-label">Global Config</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- КОНТРОЛЛЕРЫ -->
+                <div class="menu-section">
+                    <div class="menu-title">🔧 КОНТРОЛЛЕРЫ</div>
+                    
+                    <!-- Поток -->
+                    <div class="vendor-section">
+                        <div class="vendor-header" onclick="toggleVendor('potok')">
+                            <span class="vendor-icon">🔵</span>
+                            <span class="vendor-name">Поток</span>
+                            <span class="vendor-toggle">▼</span>
+                        </div>
+                        <div class="vendor-features" id="vendor-potok">
+                            <button onclick="showVendorFeature('potok', 'generator')" data-vendor="potok" data-feature="generator" class="feature-item">
+                                <span class="feature-icon">⚙️</span>
+                                <span class="feature-label">Генератор условий</span>
+                            </button>
+                            <button onclick="showVendorFeature('potok', 'conflicts')" data-vendor="potok" data-feature="conflicts" class="feature-item">
+                                <span class="feature-icon">⚔️</span>
+                                <span class="feature-label">Conflicts</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Swarco -->
+                    <div class="vendor-section">
+                        <div class="vendor-header" onclick="toggleVendor('swarco')">
+                            <span class="vendor-icon">🟢</span>
+                            <span class="vendor-name">Swarco</span>
+                            <span class="vendor-toggle">▼</span>
+                        </div>
+                        <div class="vendor-features" id="vendor-swarco">
+                            <button onclick="showVendorFeature('swarco', 'generate')" data-vendor="swarco" data-feature="generate" class="feature-item">
+                                <span class="feature-icon">⚙️</span>
+                                <span class="feature-label">Generate</span>
+                            </button>
+                            <button onclick="showVendorFeature('swarco', 'parser')" data-vendor="swarco" data-feature="parser" class="feature-item">
+                                <span class="feature-icon">📊</span>
+                                <span class="feature-label">Parser</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Peek -->
+                    <div class="vendor-section">
+                        <div class="vendor-header" onclick="toggleVendor('peek')">
+                            <span class="vendor-icon">🟡</span>
+                            <span class="vendor-name">Peek</span>
+                            <span class="vendor-toggle">▼</span>
+                        </div>
+                        <div class="vendor-features" id="vendor-peek">
+                            <button onclick="showVendorFeature('peek', 'generate')" data-vendor="peek" data-feature="generate" class="feature-item">
+                                <span class="feature-icon">⚙️</span>
+                                <span class="feature-label">Generate</span>
+                            </button>
+                            <button onclick="showVendorFeature('peek', 'monitor')" data-vendor="peek" data-feature="monitor" class="feature-item">
+                                <span class="feature-icon">📈</span>
+                                <span class="feature-label">Monitor</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Сигнал -->
+                    <div class="vendor-section">
+                        <div class="vendor-header" onclick="toggleVendor('signal')">
+                            <span class="vendor-icon">🔴</span>
+                            <span class="vendor-name">Сигнал</span>
+                            <span class="vendor-toggle">▼</span>
+                        </div>
+                        <div class="vendor-features" id="vendor-signal">
+                            <button onclick="showVendorFeature('signal', 'generate')" data-vendor="signal" data-feature="generate" class="feature-item">
+                                <span class="feature-icon">⚙️</span>
+                                <span class="feature-label">Generate</span>
+                            </button>
+                            <button onclick="showVendorFeature('signal', 'calibrate')" data-vendor="signal" data-feature="calibrate" class="feature-item">
+                                <span class="feature-icon">🔧</span>
+                                <span class="feature-label">Calibrate</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- ПРАВАЯ КОЛОНКА - КОНТЕНТ -->
+            <main class="content">
+                <div id="status-message" class="status"></div>
+                <div id="feature-content" class="feature-page"></div>
+            </main>
+        </div>
     </div>
     
-    <div id="info-page" class="page active"></div>
-    <div id="generate-page" class="page"></div>
-    <div id="parse-page" class="page"></div>
-    
     <script src="/js/core.js"></script>
-    <script src="/js/info.js"></script>
-    <script src="/js/generate.js"></script>
-    <script src="/js/parse.js"></script>
+    <!-- Общие фичи -->
+    <script src="/js/features/common/info.js"></script>
+    <script src="/js/features/common/stats.js"></script>
+    <script src="/js/features/common/config.js"></script>
+    <!-- Фичи контроллеров -->
+    <script src="/js/features/potok/generator.js"></script> 
+    <script src="/js/features/potok/conflicts.js"></script>
+    <script src="/js/features/swarco/generate.js"></script>
+    <script src="/js/features/swarco/parser.js"></script>
+    <script src="/js/features/peek/generate.js"></script>
+    <script src="/js/features/peek/monitor.js"></script>
+    <script src="/js/features/signal/generate.js"></script>
+    <script src="/js/features/signal/calibrate.js"></script>
 </body>
 </html>

@@ -7,11 +7,9 @@ use crate::handlers;
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        // handlers::root,
         handlers::health,
         handlers::info,
         handlers::generate,
-        handlers::parse
     ),
     components(
         schemas(

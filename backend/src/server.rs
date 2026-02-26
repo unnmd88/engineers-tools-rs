@@ -12,8 +12,9 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
+use tower_http::services::ServeDir;
 
-use crate::handlers::{health, info, generate, parse};
+use crate::handlers::{health, info, generate};
 use crate::docs::ApiDoc;  // Этот импорт должен быть
 use mime_guess;  
 
@@ -33,16 +34,18 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> Self {
         // Загружаем .env
-        if let Ok(env_file) = env::var("ENV_FILE") {
-            println!("📁 Загружаем конфиг из: {}", env_file);
-            from_filename(&env_file).ok();
-        } else {
-            dotenv().ok();
-        }
+        let env_file = env::var("ENV_FILE").unwrap();
 
-        // ОТЛАДКА: смотрим что в переменных окружения
-        println!("🔍 DEBUG: env::var(\"PORT\") = {:?}", env::var("PORT"));
-        println!("🔍 DEBUG: env::var(\"HOST\") = {:?}", env::var("HOST"));
+      // 2. ЗАГРУЖАЕМ переменные из файла
+        match from_filename(&env_file) {
+            Ok(_) => println!("✅ Загружен файл: {}", env_file),
+            Err(e) => println!("⚠️ Ошибка загрузки {}: {}", env_file, e),
+        }
+        
+        // 3. ТЕПЕРЬ читаем переменные
+        println!("🔍 DEBUG: ENVIRONMENT = {:?}", env::var("ENVIRONMENT"));
+        println!("🔍 DEBUG: PORT = {:?}", env::var("PORT"));
+        println!("🔍 DEBUG: HOST = {:?}", env::var("HOST"));
         
         let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
         let preferred_port = env::var("PORT")
@@ -95,7 +98,7 @@ impl Config {
 struct Frontend;
 
 
-async fn static_handler(
+async fn embedded_static_handler(
     uri: axum::http::Uri,
     state: axum::extract::State<AppState>,
 ) -> impl IntoResponse {
@@ -140,6 +143,34 @@ async fn static_handler(
 }
 
 
+// Для dev окружения, чтобы не изменения видны были при изменении файлов во ../frontend
+async fn dev_static_handler(uri: axum::http::Uri) -> impl IntoResponse {
+    let path = uri.path().trim_start_matches('/');
+    
+    if path.is_empty() || path == "/" {
+        // Просто читаем index.html с диска без изменений
+        match tokio::fs::read_to_string("../frontend/index.html").await {
+            Ok(html) => Html(html).into_response(),
+            Err(_) => (StatusCode::NOT_FOUND, "index.html not found").into_response(),
+        }
+    } else {
+        // Для остальных файлов читаем как есть
+        let full_path = format!("../frontend/{}", path);
+        match tokio::fs::read(full_path).await {
+            Ok(content) => {
+                let mime = mime_guess::from_path(path).first_or_octet_stream();
+                (
+                    [(axum::http::header::CONTENT_TYPE, mime.as_ref())],
+                    content,
+                )
+                    .into_response()
+            }
+            Err(_) => (StatusCode::NOT_FOUND, "404").into_response(),
+        }
+    }
+}
+
+
 #[derive(Clone)]
 pub struct AppState {
     pub server_running: Arc<Mutex<bool>>,
@@ -161,21 +192,33 @@ pub async fn run_server(config: Config) {  // ПРИНИМАЕМ CONFIG
         server_running: Arc::new(Mutex::new(true)),
         config: config.clone(),  // теперь clone работает
     };
+
+    // let is_dev = env::var("ENVIRONMENT").is_ok();
+
+    let current_env = env::var("ENVIRONMENT").unwrap();
     
     let app = Router::new()
         .route("/health", get(health))
         .route("/info", get(info))
         .route("/generate", post(generate))
-        .route("/parse", post(parse))
         .merge(SwaggerUi::new("/swagger-ui")
             .url("/api-docs/openapi.json", ApiDoc::openapi()))
-        .with_state(state.clone())  // передаём state
-        .fallback(move |uri| {  // используем move
-            let state = state.clone();  // клонируем для каждого запроса
-            async move {
-                static_handler(uri, axum::extract::State(state)).await  // оборачиваем в State
-            }
-        });
+        .with_state(state.clone());  // передаём state
+        
+    // Добавляем fallback в зависимости от окружения
+    let app = if current_env == "DEV" {
+        println!("📁 Режим разработки: файлы читаются с диска");
+        app.fallback(get(dev_static_handler).post(dev_static_handler))
+    } else if current_env == "PROD" {
+        println!("📦 Режим production: используются встроенные файлы");
+        app.fallback(
+            get(embedded_static_handler)
+                .post(embedded_static_handler)
+                .with_state(state)
+        )
+    } else {
+        panic!("Неподдерживаемое значение ENVIRONMENT: {}. Ожидается DEV или PROD", current_env);
+    };
 
     let addr = config.addr();  // ИСПОЛЬЗУЕМ CONFIG
     

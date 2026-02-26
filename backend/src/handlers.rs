@@ -6,9 +6,12 @@ use axum::{
 };
 use serde_json::json;
 use utoipa;
-use traffic_core::conditions::{Parser, generate_condition};
+use traffic_core::conditions::{
+    parse_ddr_expression, 
+    to_ddr_string, 
+};
 
-use crate::models::{ConditionRequest, GenerateResponse, ParseResponse, ErrorResponse};
+use crate::models::{ConditionRequest, GenerateResponse, ErrorResponse};
 use crate::server::AppState;
 
 
@@ -32,7 +35,7 @@ pub async fn info() -> impl IntoResponse {
     (StatusCode::OK, Json(json!({
         "name": "Traffic Core API",
         "version": "0.1.0",
-        "endpoints": ["/", "/health", "/info", "/generate", "/parse"]
+        "endpoints": ["/", "/health", "/info", "/generate",]
     })))
 }
 
@@ -46,48 +49,25 @@ pub async fn info() -> impl IntoResponse {
     ),
     tag = "conditions"
 )]
+
 pub async fn generate(
     State(_state): State<AppState>,
     Json(req): Json<ConditionRequest>,
 ) -> impl IntoResponse {
-    let result = generate_condition(&req.input);
-    let response = GenerateResponse {
-        input: req.input.clone(),
-        output: result,
-    };
-    (StatusCode::OK, Json(response)).into_response()
-}
-
-#[utoipa::path(
-    post,
-    path = "/parse",
-    request_body = ConditionRequest,
-    responses(
-        (status = 200, description = "Условие успешно разобрано", body = ParseResponse),
-        (status = 400, description = "Ошибка парсинга", body = ErrorResponse)
-    ),
-    tag = "conditions"
-)]
-pub async fn parse(
-    State(_state): State<AppState>,
-    Json(req): Json<ConditionRequest>,
-) -> impl IntoResponse {
-    let mut parser = Parser::new(&req.input);
-    match parser.parse() {
+    match parse_ddr_expression(&req.input) {
         Ok(expr) => {
-            let response = ParseResponse {
+            let response = GenerateResponse {
                 input: req.input.clone(),
-                ast: format!("{:#?}", expr),
-                ddr: expr.to_ddr_string(),
+                output: to_ddr_string(&expr),
             };
             (StatusCode::OK, Json(response)).into_response()
-        }
+        },
         Err(e) => {
-            let error = ErrorResponse {
-                error: e,
-                input: req.input,
+            let response = GenerateResponse {
+                input: req.input.clone(),
+                output: e.to_string(),
             };
-            (StatusCode::BAD_REQUEST, Json(error)).into_response()
+            (StatusCode::BAD_REQUEST, Json(response)).into_response()
         }
     }
 }

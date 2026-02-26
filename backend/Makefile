@@ -5,6 +5,7 @@
 #up:
 #	${DC} -f ${APP_FILE} ${ENV} up --build -d
 
+ENV_FILE ?= .env.dev
 
 .PHONY: check
 check:
@@ -12,7 +13,7 @@ check:
 
 .PHONY: run
 run:
-	cargo run  --target x86_64-unknown-linux-gnu
+	ENV_FILE=$(ENV_FILE) cargo run --target x86_64-unknown-linux-gnu
 
 .PHONY: build-release
 build-release:
