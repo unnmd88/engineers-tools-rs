@@ -107,7 +107,8 @@ async fn main() {
 
     print_instructions(&config);  // передаём ссылку на config
 
-    let url = format!("http://{}:{}/swagger-ui", config.host, config.port);
+    // let url = format!("http://{}:{}/swagger-ui", config.host, config.port);
+    let url = format!("http://{}:{}", config.host, config.port);
 
     // Запускаем открытие браузера в отдельном потоке
     thread::spawn(|| {

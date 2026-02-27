@@ -27,8 +27,8 @@ use std::env;
 pub struct Config {
     pub host: String,
     pub port: u16,
+    pub api_prefix: String,
 }
-
 
 
 impl Config {
@@ -47,12 +47,17 @@ impl Config {
         println!("🔍 DEBUG: PORT = {:?}", env::var("PORT"));
         println!("🔍 DEBUG: HOST = {:?}", env::var("HOST"));
         
-        let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-        let preferred_port = env::var("PORT")
-            .unwrap_or_else(|_| "3000".to_string())
-            .parse()
-            .unwrap_or(3000);
+        let host = env::var("HOST").unwrap().to_string();
+        let preferred_port: u16 = env::var("PORT").unwrap().parse().unwrap();
+            
+        // let preferred_port = env::var("PORT")
+        //     .unwrap_or_else(|_| "3000".to_string())
+        //     .parse()
+        //     .unwrap_or(3000);
         
+        let api_prefix = env::var("API_PREFIX").unwrap().to_string();
+            
+
         // ИЩЕМ СВОБОДНЫЙ ПОРТ (для пользователей)
         let (port, is_preferred) = Self::find_free_port(&host, preferred_port);
         
@@ -62,7 +67,7 @@ impl Config {
             println!("🔍 Порт {} занят, используем свободный порт {}", preferred_port, port);
         }
         
-        Config { host, port }
+        Config { host, port , api_prefix }
     }
     
     // Поиск свободного порта
@@ -148,13 +153,35 @@ async fn dev_static_handler(uri: axum::http::Uri) -> impl IntoResponse {
     let path = uri.path().trim_start_matches('/');
     
     if path.is_empty() || path == "/" {
-        // Просто читаем index.html с диска без изменений
         match tokio::fs::read_to_string("../frontend/index.html").await {
-            Ok(html) => Html(html).into_response(),
+            Ok(html) => {
+                // Читаем переменные окружения
+                let host = env::var("HOST").unwrap().to_string();
+                let port = env::var("PORT").unwrap().to_string();
+                let current_env = env::var("ENVIRONMENT").unwrap().to_string();
+                let api_prefix = env::var("API_PREFIX").unwrap().to_string();
+
+                // Формируем конфиг на основе переменных окружения
+                let config_script = format!(
+                    r#"<script>
+                        window.APP_CONFIG = {{
+                            host: "{}",
+                            port: {},
+                            api_url: "http://{}:{}{}/",
+                            environment: "{}"
+                        }};
+                        
+                        window.DEV_MODE = true;
+                    </script>"#,
+                    host, port, host, port, api_prefix, current_env
+                );
+                
+                let html_with_config = html.replace("<!-- CONFIG -->", &config_script);
+                Html(html_with_config).into_response()
+            }
             Err(_) => (StatusCode::NOT_FOUND, "index.html not found").into_response(),
         }
     } else {
-        // Для остальных файлов читаем как есть
         let full_path = format!("../frontend/{}", path);
         match tokio::fs::read(full_path).await {
             Ok(content) => {
@@ -169,6 +196,33 @@ async fn dev_static_handler(uri: axum::http::Uri) -> impl IntoResponse {
         }
     }
 }
+
+// async fn dev_static_handler(uri: axum::http::Uri) -> impl IntoResponse {
+//     let path = uri.path().trim_start_matches('/');
+    
+//     if path.is_empty() || path == "/" {
+//         // Просто читаем index.html с диска без изменений
+//         match tokio::fs::read_to_string("../frontend/index.html").await {
+//             Ok(html) => Html(html).into_response(),
+//             Err(_) => (StatusCode::NOT_FOUND, "index.html not found").into_response(),
+//         }
+//     } else {
+//         // Для остальных файлов читаем как есть
+//         let full_path = format!("../frontend/{}", path);
+//         match tokio::fs::read(full_path).await {
+//             Ok(content) => {
+//                 let mime = mime_guess::from_path(path).first_or_octet_stream();
+//                 (
+//                     [(axum::http::header::CONTENT_TYPE, mime.as_ref())],
+//                     content,
+//                 )
+//                     .into_response()
+//             }
+//             Err(_) => (StatusCode::NOT_FOUND, "404").into_response(),
+//         }
+//     }
+// }
+
 
 
 #[derive(Clone)]
@@ -197,15 +251,27 @@ pub async fn run_server(config: Config) {  // ПРИНИМАЕМ CONFIG
 
     let current_env = env::var("ENVIRONMENT").unwrap();
     
-    let app = Router::new()
+
+    // Создаем potok роутер
+    let potok_router = Router::new()
+        .route("/generate-condition", post(generate)) 
+        .with_state(state.clone());
+
+
+    let api_router = Router::new()
         .route("/health", get(health))
         .route("/info", get(info))
-        .route("/generate", post(generate))
+        .nest("/potok", potok_router)
+        .with_state(state.clone());
+
+    // Основной роутер с префиксом
+    let app = Router::new()
+        .nest(&config.api_prefix, api_router) 
         .merge(SwaggerUi::new("/swagger-ui")
-            .url("/api-docs/openapi.json", ApiDoc::openapi()))
-        .with_state(state.clone());  // передаём state
+        .url("/api-docs/openapi.json", ApiDoc::openapi()))
+        .with_state(state.clone());
         
-    // Добавляем fallback в зависимости от окружения
+    // Добавляем fallback в зависимости от окружения (без изменений)
     let app = if current_env == "DEV" {
         println!("📁 Режим разработки: файлы читаются с диска");
         app.fallback(get(dev_static_handler).post(dev_static_handler))
@@ -217,7 +283,7 @@ pub async fn run_server(config: Config) {  // ПРИНИМАЕМ CONFIG
                 .with_state(state)
         )
     } else {
-        panic!("Неподдерживаемое значение ENVIRONMENT: {}. Ожидается DEV или PROD", current_env);
+        panic!("Неподдерживаемое значение ENVIRONMENT: {}", current_env);
     };
 
     let addr = config.addr();  // ИСПОЛЬЗУЕМ CONFIG

@@ -121,16 +121,22 @@ window.getCurrentVendor = () => currentVendor;
 window.getCurrentFeature = () => currentVendorFeature;
 
 // ==================== API ====================
-const API_BASE = window.APP_CONFIG 
-    ? `http://${window.APP_CONFIG.host}:${window.APP_CONFIG.port}`
-    : '';
+// const API_BASE = window.APP_CONFIG 
+//     ? `http://${window.APP_CONFIG.host}:${window.APP_CONFIG.port}`
+//     : '';
+
+const API_BASE = window.APP_CONFIG ? window.APP_CONFIG.api_url : '';
+       
 
 window.api = {
     get: async (endpoint) => {
+        
         const res = await fetch(API_BASE + endpoint);
         return res.json();
     },
     post: async (endpoint, data) => {
+        console.log(`API_BASE: ${API_BASE}`);
+        console.log(`ROUTE: ${API_BASE + endpoint}`);
         const res = await fetch(API_BASE + endpoint, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},

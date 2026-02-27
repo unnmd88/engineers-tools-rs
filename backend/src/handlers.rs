@@ -41,7 +41,7 @@ pub async fn info() -> impl IntoResponse {
 
 #[utoipa::path(
     post,
-    path = "/generate",
+    path = "/api/v1/potok/generate-condition",
     request_body = ConditionRequest,
     responses(
         (status = 200, description = "Условие успешно сгенерировано", body = GenerateResponse),
