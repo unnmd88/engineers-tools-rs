@@ -14,7 +14,12 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 use tower_http::services::ServeDir;
 
-use crate::handlers::{health, info, generate};
+use crate::handlers::{
+    health, 
+    info, 
+    generate_potok_condition, 
+    generate_scn,
+};
 use crate::docs::ApiDoc;  // Этот импорт должен быть
 use mime_guess;  
 
@@ -147,7 +152,6 @@ async fn embedded_static_handler(
     }
 }
 
-
 // Для dev окружения, чтобы не изменения видны были при изменении файлов во ../frontend
 async fn dev_static_handler(uri: axum::http::Uri) -> impl IntoResponse {
     let path = uri.path().trim_start_matches('/');
@@ -197,33 +201,6 @@ async fn dev_static_handler(uri: axum::http::Uri) -> impl IntoResponse {
     }
 }
 
-// async fn dev_static_handler(uri: axum::http::Uri) -> impl IntoResponse {
-//     let path = uri.path().trim_start_matches('/');
-    
-//     if path.is_empty() || path == "/" {
-//         // Просто читаем index.html с диска без изменений
-//         match tokio::fs::read_to_string("../frontend/index.html").await {
-//             Ok(html) => Html(html).into_response(),
-//             Err(_) => (StatusCode::NOT_FOUND, "index.html not found").into_response(),
-//         }
-//     } else {
-//         // Для остальных файлов читаем как есть
-//         let full_path = format!("../frontend/{}", path);
-//         match tokio::fs::read(full_path).await {
-//             Ok(content) => {
-//                 let mime = mime_guess::from_path(path).first_or_octet_stream();
-//                 (
-//                     [(axum::http::header::CONTENT_TYPE, mime.as_ref())],
-//                     content,
-//                 )
-//                     .into_response()
-//             }
-//             Err(_) => (StatusCode::NOT_FOUND, "404").into_response(),
-//         }
-//     }
-// }
-
-
 
 #[derive(Clone)]
 pub struct AppState {
@@ -252,9 +229,13 @@ pub async fn run_server(config: Config) {  // ПРИНИМАЕМ CONFIG
     let current_env = env::var("ENVIRONMENT").unwrap();
     
 
+    let common_gen_scn = Router::new()
+        .route("/generate-scn", post(generate_scn)) 
+        .with_state(state.clone());
+
     // Создаем potok роутер
     let potok_router = Router::new()
-        .route("/generate-condition", post(generate)) 
+        .route("/generate-condition", post(generate_potok_condition)) 
         .with_state(state.clone());
 
 
@@ -262,6 +243,7 @@ pub async fn run_server(config: Config) {  // ПРИНИМАЕМ CONFIG
         .route("/health", get(health))
         .route("/info", get(info))
         .nest("/potok", potok_router)
+        .nest("/common", common_gen_scn)
         .with_state(state.clone());
 
     // Основной роутер с префиксом

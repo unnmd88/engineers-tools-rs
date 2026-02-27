@@ -11,6 +11,7 @@ use utoipa;
 //     to_ddr_string, 
 // };
 use traffic_controller::potok::conditions::{parse_input_expression, to_condition_string};
+use traffic_controller::format::scn::to_scn_format;
 
 use crate::models::{ConditionRequest, GenerateResponse, ErrorResponse};
 use crate::server::AppState;
@@ -42,6 +43,29 @@ pub async fn info() -> impl IntoResponse {
 
 #[utoipa::path(
     post,
+    path = "/api/v1/common/generate-scn",
+    request_body = ConditionRequest,
+    responses(
+        (status = 200, description = "Условие успешно сгенерировано", body = GenerateResponse),
+        (status = 400, description = "Ошибка в формате ввода", body = ErrorResponse)
+    ),
+    tag = "generate-scn"
+)]
+pub async fn generate_scn(
+    State(_state): State<AppState>,
+    Json(req): Json<ConditionRequest>,
+) -> impl IntoResponse {
+
+    let response = GenerateResponse {
+        input: req.input.clone(),
+        output: to_scn_format(&req.input),
+    };
+    (StatusCode::OK, Json(response)).into_response()
+}
+
+
+#[utoipa::path(
+    post,
     path = "/api/v1/potok/generate-condition",
     request_body = ConditionRequest,
     responses(
@@ -50,8 +74,7 @@ pub async fn info() -> impl IntoResponse {
     ),
     tag = "conditions"
 )]
-
-pub async fn generate(
+pub async fn generate_potok_condition(
     State(_state): State<AppState>,
     Json(req): Json<ConditionRequest>,
 ) -> impl IntoResponse {

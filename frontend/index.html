@@ -22,6 +22,10 @@
                             <span class="menu-icon">ℹ️</span>
                             <span class="menu-label">Info</span>
                         </button>
+                            <button onclick="showCommonFeature('gen-scn')" data-common="gen-scn" class="menu-item">
+                            <span class="menu-icon">⚙️</span>
+                            <span class="menu-label">Генерация SCN</span>
+                        </button>
                         <button onclick="showCommonFeature('stats')" data-common="stats" class="menu-item">
                             <span class="menu-icon">📊</span>
                             <span class="menu-label">Statistics</span>
@@ -128,14 +132,15 @@
     <script src="/js/features/common/info.js"></script>
     <script src="/js/features/common/stats.js"></script>
     <script src="/js/features/common/config.js"></script>
+    <script src="/js/features/common/gen_scn.js"></script>
     <!-- Фичи контроллеров -->
     <script src="/js/features/potok/generator.js"></script> 
-    <script src="/js/features/potok/conflicts.js"></script>
-    <script src="/js/features/swarco/generate.js"></script>
+    <!-- <script src="/js/features/potok/conflicts.js"></script> -->
+    <!-- <script src="/js/features/swarco/generate.js"></script>
     <script src="/js/features/swarco/parser.js"></script>
     <script src="/js/features/peek/generate.js"></script>
     <script src="/js/features/peek/monitor.js"></script>
     <script src="/js/features/signal/generate.js"></script>
-    <script src="/js/features/signal/calibrate.js"></script>
+    <script src="/js/features/signal/calibrate.js"></script> -->
 </body>
 </html>

@@ -97,7 +97,6 @@ async function handleGenerate() {
             input: input
         });
         
-        // Предполагаем, что API возвращает { result: "..." } или { data: "..." }
         const result = response.output || JSON.stringify(response);
         
         resultEl.textContent = result;

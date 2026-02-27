@@ -49,13 +49,36 @@ async function renderCommonFeature(feature) {
     const content = document.getElementById('feature-content');
     content.innerHTML = `<div class="status info">Загрузка...</div>`;
     
-    const renderFunc = window[`renderCommon${capitalize(feature)}`];
+    // Пробуем оба варианта для обратной совместимости
+    let renderFunc = window[`renderCommon${capitalize(feature)}`]; // старый стиль (renderCommonGen-scn)
+    
+    // Если не нашли, пробуем новый стиль: gen-scn → GenScn
+    if (!renderFunc && feature.includes('-')) {
+        const pascalName = feature.split('-')
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join('');
+        renderFunc = window[`renderCommon${pascalName}`]; // renderCommonGenScn
+    }
+    
     if (renderFunc) {
         await renderFunc();
     } else {
         content.innerHTML = `<div class="status error">Фича ${feature} в разработке</div>`;
     }
 }
+
+
+// async function renderCommonFeature(feature) {
+//     const content = document.getElementById('feature-content');
+//     content.innerHTML = `<div class="status info">Загрузка...</div>`;
+    
+//     const renderFunc = window[`renderCommon${capitalize(feature)}`];
+//     if (renderFunc) {
+//         await renderFunc();
+//     } else {
+//         content.innerHTML = `<div class="status error">Фича ${feature} в разработке</div>`;
+//     }
+// }
 
 async function renderVendorFeature(vendor, feature) {
     const content = document.getElementById('feature-content');
@@ -135,8 +158,6 @@ window.api = {
         return res.json();
     },
     post: async (endpoint, data) => {
-        console.log(`API_BASE: ${API_BASE}`);
-        console.log(`ROUTE: ${API_BASE + endpoint}`);
         const res = await fetch(API_BASE + endpoint, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},

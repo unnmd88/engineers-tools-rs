@@ -9,7 +9,7 @@ use crate::handlers;
     paths(
         handlers::health,
         handlers::info,
-        handlers::generate,
+        handlers::generate_potok_condition,
     ),
     components(
         schemas(
