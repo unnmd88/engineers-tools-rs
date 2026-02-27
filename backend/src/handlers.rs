@@ -6,10 +6,11 @@ use axum::{
 };
 use serde_json::json;
 use utoipa;
-use traffic_core::conditions::{
-    parse_ddr_expression, 
-    to_ddr_string, 
-};
+// use traffic_core::conditions::{
+//     parse_ddr_expression, 
+//     to_ddr_string, 
+// };
+use traffic_controller::potok::conditions::{parse_input_expression, to_condition_string};
 
 use crate::models::{ConditionRequest, GenerateResponse, ErrorResponse};
 use crate::server::AppState;
@@ -54,11 +55,11 @@ pub async fn generate(
     State(_state): State<AppState>,
     Json(req): Json<ConditionRequest>,
 ) -> impl IntoResponse {
-    match parse_ddr_expression(&req.input) {
+    match parse_input_expression(&req.input) {
         Ok(expr) => {
             let response = GenerateResponse {
                 input: req.input.clone(),
-                output: to_ddr_string(&expr),
+                output: to_condition_string(&expr),
             };
             (StatusCode::OK, Json(response)).into_response()
         },
