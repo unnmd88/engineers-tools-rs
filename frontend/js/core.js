@@ -67,19 +67,6 @@ async function renderCommonFeature(feature) {
     }
 }
 
-
-// async function renderCommonFeature(feature) {
-//     const content = document.getElementById('feature-content');
-//     content.innerHTML = `<div class="status info">Загрузка...</div>`;
-    
-//     const renderFunc = window[`renderCommon${capitalize(feature)}`];
-//     if (renderFunc) {
-//         await renderFunc();
-//     } else {
-//         content.innerHTML = `<div class="status error">Фича ${feature} в разработке</div>`;
-//     }
-// }
-
 async function renderVendorFeature(vendor, feature) {
     const content = document.getElementById('feature-content');
     content.innerHTML = `<div class="status info">Загрузка...</div>`;
@@ -144,30 +131,72 @@ window.getCurrentVendor = () => currentVendor;
 window.getCurrentFeature = () => currentVendorFeature;
 
 // ==================== API ====================
-// const API_BASE = window.APP_CONFIG 
-//     ? `http://${window.APP_CONFIG.host}:${window.APP_CONFIG.port}`
-//     : '';
 
 const API_BASE = window.APP_CONFIG ? window.APP_CONFIG.api_url : '';
        
 
 window.api = {
-    get: async (endpoint) => {
-        
-        const res = await fetch(API_BASE + endpoint);
-        return res.json();
-    },
     post: async (endpoint, data) => {
-        const res = await fetch(API_BASE + endpoint, {
+        // 1. Отправляем запрос
+        const response = await fetch(API_BASE + endpoint, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
         });
-        return res.json();
+        
+        // 2. Пытаемся распарсить JSON (даже при ошибке)
+        const responseData = await response.json().catch(() => null);
+        
+        // 3. Проверяем HTTP статус
+        if (!response.ok) {
+            // Если сервер прислал сообщение об ошибке - используем его
+            if (responseData?.message) {
+                throw new Error(responseData.message);
+            }
+            // Иначе общее сообщение
+            throw new Error(`Ошибка сервера(${response.status})`);
+        }
+        
+        // 4. Успех - возвращаем данные
+        return responseData;
+    },
+    
+    get: async (endpoint) => {
+        const response = await fetch(API_BASE + endpoint);
+        const responseData = await response.json().catch(() => null);
+        
+        if (!response.ok) {
+            if (responseData?.error) {
+                throw new Error(responseData.error);
+            }
+            throw new Error(`HTTP error ${response.status}`);
+        }
+        
+        return responseData;
     }
 };
 
+
+// window.api = {
+//     get: async (endpoint) => {
+        
+//         const res = await fetch(API_BASE + endpoint);
+//         return res.json();
+//     },
+//     post: async (endpoint, data) => {
+//         const res = await fetch(API_BASE + endpoint, {
+//             method: 'POST',
+//             headers: {'Content-Type': 'application/json'},
+//             body: JSON.stringify(data)
+//         });
+//         return res.json();
+//     }
+// };
+
+
 // ==================== СТАТУСЫ ====================
+
+
 window.showStatus = function(message, type = 'info') {
     const statusDiv = document.getElementById('status-message');
     if (statusDiv) {

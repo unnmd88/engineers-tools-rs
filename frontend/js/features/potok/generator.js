@@ -91,23 +91,39 @@ async function handleGenerate() {
     resultEl.textContent = '⏳ Генерация...';
     window.showStatus('Генерация...', 'info');
     
+    // try {
+    //     // Вызываем API (используем существующий api объект из core.js)
+    //     const response = await window.api.post('potok/tlc-condition-generations', {
+    //         input: input
+    //     });
+        
+    //     const result = response.output || JSON.stringify(response);
+        
+    //     resultEl.textContent = result;
+    //     window.showStatus('Готово!', 'success');
+        
+    // } catch (error) {
+    //     console.error('API error:', error);
+        
+    //     // Если API недоступно - показываем демо-результат
+    //     resultEl.textContent = generateDemoResult(input);
+    //     window.showStatus('Используется демо-режим (API недоступно)', 'info');
+    // }
+
     try {
-        // Вызываем API (используем существующий api объект из core.js)
-        const response = await window.api.post('potok/generate-condition', {
+        // ✅ Чисто! Никакой возни с response, ok, json()
+        const data = await window.api.post('potok/tlc-condition-generations', {
             input: input
         });
         
-        const result = response.output || JSON.stringify(response);
-        
-        resultEl.textContent = result;
+        // ✅ Просто используем данные
+        resultEl.textContent = data.output;
         window.showStatus('Готово!', 'success');
         
     } catch (error) {
-        console.error('API error:', error);
-        
-        // Если API недоступно - показываем демо-результат
-        resultEl.textContent = generateDemoResult(input);
-        window.showStatus('Используется демо-режим (API недоступно)', 'info');
+        // ✅ Все ошибки уже обработаны в api.post
+        resultEl.textContent = `❌ ${error.message}`;
+        window.showStatus('Ошибка', 'error');
     }
 }
 

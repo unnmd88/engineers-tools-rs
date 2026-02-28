@@ -74,23 +74,22 @@ async function handleScnGenerate() {
         return;
     }
     
-    // Показываем загрузку
     resultEl.textContent = '⏳ Генерация...';
     window.showStatus('Генерация SCN...', 'info');
     
     try {
-        const response = await window.api.post('common/generate-scn', {
+        // ✅ Чисто! Никакой возни с response, ok, json()
+        const data = await window.api.post('common/scn-generations', {
             input: input
         });
         
-        const result = response.output || JSON.stringify(response);
-        
-        resultEl.textContent = result;
+        // ✅ Просто используем данные
+        resultEl.textContent = data.output;
         window.showStatus('Готово!', 'success');
         
     } catch (error) {
-        console.error('API error:', error);
-        resultEl.textContent = '❌ Ошибка генерации';
+        // ✅ Все ошибки уже обработаны в api.post
+        resultEl.textContent = `❌ ${error.message}`;
         window.showStatus('Ошибка', 'error');
     }
 }

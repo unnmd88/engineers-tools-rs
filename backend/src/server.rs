@@ -1,10 +1,10 @@
 use axum::{
     Router, 
-    routing::{get, post},
+    routing::get,
     response::{Html, IntoResponse},
     http::StatusCode,
 };
-use std::net::TcpListener as StdTcpListener;  // ВАЖНО: для проверки порта
+use std::net::TcpListener as StdTcpListener;
 use std::net::SocketAddr;
 use rust_embed::RustEmbed;
 use tokio::net::TcpListener;
@@ -12,18 +12,14 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-use tower_http::services::ServeDir;
+// use tower_http::services::ServeDir;
 
-use crate::handlers::{
-    health, 
-    info, 
-    generate_potok_condition, 
-    generate_scn,
-};
-use crate::docs::ApiDoc;  // Этот импорт должен быть
+use crate::features;
+
+use crate::docs::ApiDoc;
 use mime_guess;  
 
-use dotenvy::{dotenv, from_filename};  // ВАЖНО: правильный импорт dotenv
+use dotenvy::from_filename;
 use std::env;
 
 
@@ -34,7 +30,6 @@ pub struct Config {
     pub port: u16,
     pub api_prefix: String,
 }
-
 
 impl Config {
     pub fn from_env() -> Self {
@@ -55,14 +50,9 @@ impl Config {
         let host = env::var("HOST").unwrap().to_string();
         let preferred_port: u16 = env::var("PORT").unwrap().parse().unwrap();
             
-        // let preferred_port = env::var("PORT")
-        //     .unwrap_or_else(|_| "3000".to_string())
-        //     .parse()
-        //     .unwrap_or(3000);
         
         let api_prefix = env::var("API_PREFIX").unwrap().to_string();
             
-
         // ИЩЕМ СВОБОДНЫЙ ПОРТ (для пользователей)
         let (port, is_preferred) = Self::find_free_port(&host, preferred_port);
         
@@ -201,13 +191,11 @@ async fn dev_static_handler(uri: axum::http::Uri) -> impl IntoResponse {
     }
 }
 
-
 #[derive(Clone)]
 pub struct AppState {
-    pub server_running: Arc<Mutex<bool>>,
+    // pub server_running: Arc<Mutex<bool>>,
     pub config: Config,
 }
-
 
 /// Сигнал для graceful shutdown
 async fn shutdown_signal() {
@@ -220,7 +208,7 @@ async fn shutdown_signal() {
 /// Запуск сервера
 pub async fn run_server(config: Config) {  // ПРИНИМАЕМ CONFIG
     let state = AppState {
-        server_running: Arc::new(Mutex::new(true)),
+        // server_running: Arc::new(Mutex::new(true)),
         config: config.clone(),  // теперь clone работает
     };
 
@@ -228,30 +216,15 @@ pub async fn run_server(config: Config) {  // ПРИНИМАЕМ CONFIG
 
     let current_env = env::var("ENVIRONMENT").unwrap();
     
-
-    let common_gen_scn = Router::new()
-        .route("/generate-scn", post(generate_scn)) 
-        .with_state(state.clone());
-
-    // Создаем potok роутер
-    let potok_router = Router::new()
-        .route("/generate-condition", post(generate_potok_condition)) 
-        .with_state(state.clone());
-
-
     let api_router = Router::new()
-        .route("/health", get(health))
-        .route("/info", get(info))
-        .nest("/potok", potok_router)
-        .nest("/common", common_gen_scn)
-        .with_state(state.clone());
+        .nest("/common", features::common_router())
+        .nest("/potok", features::potok_router());
 
     // Основной роутер с префиксом
     let app = Router::new()
         .nest(&config.api_prefix, api_router) 
         .merge(SwaggerUi::new("/swagger-ui")
-        .url("/api-docs/openapi.json", ApiDoc::openapi()))
-        .with_state(state.clone());
+        .url("/api-docs/openapi.json", ApiDoc::openapi()));
         
     // Добавляем fallback в зависимости от окружения (без изменений)
     let app = if current_env == "DEV" {
