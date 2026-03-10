@@ -9,7 +9,12 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::shared::ApiError;
-use traffic_controller::potok::conditions::{parse_input_expression, to_condition_string};
+// use traffic_controller::potok::conditions::{parse_input_expression, to_condition_string};
+use traffic_tools_rs::potok::conditions::{ 
+    parse_input_expression,
+    to_condition_string,
+ };
+
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct PotokConditionRequest {

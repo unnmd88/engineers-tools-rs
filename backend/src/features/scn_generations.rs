@@ -7,7 +7,10 @@ use axum::{
 };
 use utoipa;
 
-use traffic_controller::format::scn::to_scn_format;
+// use traffic_controller::format::scn::to_scn_format;
+use traffic_tools_rs::common::converters::to_scn_format;
+
+
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use crate::shared::ApiError;
