@@ -34,6 +34,10 @@
                             <span class="menu-icon">⚙️</span>
                             <span class="menu-label">Global Config</span>
                         </button>
+                            <button onclick="showCommonFeature('monitor')" data-common="monitor" class="menu-item">
+                            <span class="menu-icon">⚙️</span>
+                            <span class="menu-label">Монитор ДК</span>
+                        </button>
                     </div>
                 </div>
                 
@@ -91,10 +95,10 @@
                                 <span class="feature-icon">⚙️</span>
                                 <span class="feature-label">Generate</span>
                             </button>
-                            <button onclick="showVendorFeature('peek', 'monitor')" data-vendor="peek" data-feature="monitor" class="feature-item">
+                            <!-- <button onclick="showVendorFeature('peek', 'monitor')" data-vendor="peek" data-feature="monitor" class="feature-item">
                                 <span class="feature-icon">📈</span>
                                 <span class="feature-label">Monitor</span>
-                            </button>
+                            </button> -->
                         </div>
                     </div>
                     
@@ -133,13 +137,14 @@
     <script src="/js/features/common/stats.js"></script>
     <script src="/js/features/common/config.js"></script>
     <script src="/js/features/common/gen_scn.js"></script>
+    <script src="/js/features/common/monitor.js"></script>
     <!-- Фичи контроллеров -->
     <script src="/js/features/potok/generator.js"></script> 
     <!-- <script src="/js/features/potok/conflicts.js"></script> -->
     <!-- <script src="/js/features/swarco/generate.js"></script>
     <script src="/js/features/swarco/parser.js"></script>
     <script src="/js/features/peek/generate.js"></script>
-    <script src="/js/features/peek/monitor.js"></script>
+    <script src="/js/features/common/monitor.js"></script>
     <script src="/js/features/signal/generate.js"></script>
     <script src="/js/features/signal/calibrate.js"></script> -->
 </body>

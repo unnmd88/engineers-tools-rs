@@ -10,6 +10,8 @@ let currentVendorFeature = 'generate';
 window.showCommonFeature = function(feature) {
     currentMode = 'common';
     currentCommonFeature = feature;
+
+    console.log(`currentCommonFeature: ${currentCommonFeature}`)
     
     window.location.hash = `common/${feature}`;
     highlightActiveMenu(feature);
@@ -51,6 +53,7 @@ async function renderCommonFeature(feature) {
     
     // Пробуем оба варианта для обратной совместимости
     let renderFunc = window[`renderCommon${capitalize(feature)}`]; // старый стиль (renderCommonGen-scn)
+
     
     // Если не нашли, пробуем новый стиль: gen-scn → GenScn
     if (!renderFunc && feature.includes('-')) {
