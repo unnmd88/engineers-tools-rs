@@ -1,76 +1,93 @@
 use axum::{
-    Json, 
-    Router, 
-    http::StatusCode,
-    response::IntoResponse, 
-    routing::get 
+    extract::ws::{Message, WebSocket, WebSocketUpgrade},
+    response::IntoResponse,
+    routing::get,
+    Router,
 };
-use utoipa;
+use futures_util::stream::StreamExt as _;
+use futures_util::sink::SinkExt as _;
+use serde_json::json;
+use std::time::Duration;
+use tokio::time;
 
-use axum::extract::ws::{WebSocketUpgrade, WebSocket, Message};
+pub fn router() -> Router {
+    Router::new().route("/", get(ws_handler))
+}
 
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
-use crate::shared::ApiError;
-
-// Хендлер
-#[utoipa::path(
-    post,
-    path = "/api/v1/common/monitor",
-    responses(
-        (status = 200, description = "SCN успешно сгенерирован"),
-        (status = 400, description = "Ошибка ввода")
-    ),
-    tag = "monitor"
-)]
-pub async fn ws_monitor_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
+async fn ws_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
     ws.on_upgrade(handle_socket)
 }
 
-
 async fn handle_socket(mut socket: WebSocket) {
-    println!("🟢 WS подключен");
+    println!("[WS] Новое соединение");
 
-    // Ждём конфиг от клиента
-    let msg = socket.recv().await;
+    // 1. Получаем конфигурацию от клиента
+    let Some(Ok(Message::Text(config_text))) = socket.recv().await else {
+        println!("[WS] Не получен конфиг, закрываем");
+        return;
+    };
 
-    let config = match msg {
-        Some(Ok(Message::Text(text))) => {
-            println!("📩 Получен конфиг: {}", text);
-            text
-        }
-        _ => {
-            println!("❌ Не получили конфиг");
+    // 2. Парсим конфиг
+    let config: serde_json::Value = match serde_json::from_str(&config_text) {
+        Ok(v) => v,
+        Err(e) => {
+            println!("[WS] Ошибка парсинга конфига: {}", e);
             return;
         }
     };
 
-    // Псевдо-парсинг (пока без struct)
-    let mut interval = 1;
+    let interval_secs = config
+        .get("interval")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(1);
 
-    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&config) {
-        interval = json["interval"].as_u64().unwrap_or(1);
-    }
+    let interval = Duration::from_secs(interval_secs);
+    let mut ticker = time::interval(interval);
+    ticker.tick().await; // пропускаем первый тик
 
-    let mut ticker = tokio::time::interval(std::time::Duration::from_secs(interval));
+    println!("[WS] Запущен мониторинг с интервалом {} сек", interval_secs);
 
+    // 3. Основной цикл
     loop {
-        ticker.tick().await;
+        tokio::select! {
+            // Канал получения сообщений от клиента
+            msg = socket.recv() => {
+                match msg {
+                    // Клиент закрыл соединение
+                    None => {
+                        println!("[WS] Клиент закрыл соединение");
+                        break;
+                    }
+                    // Получено сообщение о закрытии
+                    Some(Ok(Message::Close(_))) => {
+                        println!("[WS] Получен Close frame");
+                        break;
+                    }
+                    // Ошибка приёма
+                    Some(Err(e)) => {
+                        println!("[WS] Ошибка приёма: {}", e);
+                        break;
+                    }
+                    // Любые другие сообщения игнорируем
+                    _ => {}
+                }
+            }
+            // Канал отправки данных по таймеру
+            _ = ticker.tick() => {
+                let data = json!({
+                    "value": rand::random::<u8>(),
+                    "ts": chrono::Utc::now().timestamp(),
+                });
 
-        let data = format!(
-            r#"{{"value": {}, "ts": {}}}"#,
-            rand::random::<u8>(),
-            chrono::Utc::now().timestamp()
-        );
+                let msg = Message::Text(data.to_string().into());
 
-        if socket.send(Message::Text(data.into())).await.is_err() {
-            println!("🔴 WS отключен");
-            break;
+                if let Err(e) = socket.send(msg).await {
+                    println!("[WS] Ошибка отправки: {}", e);
+                    break;
+                }
+            }
         }
     }
-}
 
-pub fn router() -> Router {
-    Router::new().route("/", get(ws_monitor_handler))
+    println!("[WS] Соединение завершено");
 }
-

@@ -1,10 +1,12 @@
-// core.js - ЯДРО СИСТЕМЫ (больше не меняем)
+// core.js - ЯДРО СИСТЕМЫ
 
 // Состояние
 let currentMode = 'common';
 let currentCommonFeature = 'info';
 let currentVendor = 'potok';
 let currentVendorFeature = 'generate';
+let currentCleanup = null; // функция очистки текущего раздела
+
 
 // ==================== ОБЩИЕ ФИЧИ ====================
 window.showCommonFeature = function(feature) {
@@ -46,8 +48,18 @@ function highlightActiveMenu(vendorOrFeature, feature) {
     }
 }
 
+
 // ==================== РЕНДЕР ====================
 async function renderCommonFeature(feature) {
+    // очищаем предыдущий раздел, если есть
+    if (currentCleanup) {
+        try {
+            await currentCleanup();
+        } catch (err) {
+            console.error('Ошибка при очистке раздела:', err);
+        }
+        currentCleanup = null;
+    }
     const content = document.getElementById('feature-content');
     content.innerHTML = `<div class="status info">Загрузка...</div>`;
     
@@ -64,19 +76,34 @@ async function renderCommonFeature(feature) {
     }
     
     if (renderFunc) {
-        await renderFunc();
+        const result = await renderFunc();
+        if (result && typeof result.cleanup === 'function') {
+            currentCleanup = result.cleanup;
+        }
     } else {
         content.innerHTML = `<div class="status error">Фича ${feature} в разработке</div>`;
     }
 }
 
 async function renderVendorFeature(vendor, feature) {
+    // очищаем предыдущий раздел, если есть
+    if (currentCleanup) {
+        try {
+            await currentCleanup();
+        } catch (err) {
+            console.error('Ошибка при очистке раздела:', err);
+        }
+        currentCleanup = null;
+    }
     const content = document.getElementById('feature-content');
     content.innerHTML = `<div class="status info">Загрузка...</div>`;
     
     const renderFunc = window[`render${capitalize(vendor)}${capitalize(feature)}`];
     if (renderFunc) {
-        await renderFunc();
+        const result = await renderFunc();
+        if (result && typeof result.cleanup === 'function') {
+            currentCleanup = result.cleanup;
+        }
     } else {
         content.innerHTML = `<div class="status error">Фича ${feature} для ${vendor} в разработке</div>`;
     }
