@@ -1,11 +1,11 @@
 use axum::{
+    Router,
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
     routing::get,
-    Router,
 };
-use futures_util::stream::StreamExt as _;
-use futures_util::sink::SinkExt as _;
+//use futures_util::sink::SinkExt as _;
+//use futures_util::stream::StreamExt as _;
 use serde_json::json;
 use std::time::Duration;
 use tokio::time;
@@ -14,27 +14,42 @@ pub fn router() -> Router {
     Router::new().route("/", get(ws_handler))
 }
 
-async fn ws_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
+async fn ws_handler(
+    ws: WebSocketUpgrade,
+) -> impl IntoResponse {
     ws.on_upgrade(handle_socket)
 }
 
-async fn handle_socket(mut socket: WebSocket) {
+async fn handle_socket2(mut socket: WebSocket) {
     println!("[WS] Новое соединение");
 
     // 1. Получаем конфигурацию от клиента
-    let Some(Ok(Message::Text(config_text))) = socket.recv().await else {
+    let Some(Ok(Message::Text(config_text))) =
+        socket.recv().await
+    else {
         println!("[WS] Не получен конфиг, закрываем");
         return;
     };
 
     // 2. Парсим конфиг
-    let config: serde_json::Value = match serde_json::from_str(&config_text) {
-        Ok(v) => v,
-        Err(e) => {
-            println!("[WS] Ошибка парсинга конфига: {}", e);
-            return;
-        }
-    };
+    let config: serde_json::Value =
+        match serde_json::from_str(&config_text) {
+            Ok(v) => v,
+            Err(e) => {
+                socket
+                    .send(Message::Text(
+                        "Ошибка конфигурации"
+                            .to_string()
+                            .into(),
+                    ))
+                    .await;
+                println!(
+                    "[WS] Ошибка парсинга конфига: {}",
+                    e
+                );
+                return;
+            }
+        };
 
     let interval_secs = config
         .get("interval")
@@ -45,7 +60,10 @@ async fn handle_socket(mut socket: WebSocket) {
     let mut ticker = time::interval(interval);
     ticker.tick().await; // пропускаем первый тик
 
-    println!("[WS] Запущен мониторинг с интервалом {} сек", interval_secs);
+    println!(
+        "[WS] Запущен мониторинг с интервалом {} сек",
+        interval_secs
+    );
 
     // 3. Основной цикл
     loop {
@@ -91,3 +109,5 @@ async fn handle_socket(mut socket: WebSocket) {
 
     println!("[WS] Соединение завершено");
 }
+
+async fn handle_socket(mut socket: WebSocket) {}

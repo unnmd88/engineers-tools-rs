@@ -1,20 +1,12 @@
-use axum::{
-    Json,
-    response::IntoResponse,
-    http::StatusCode,
-    Router,
-    routing::post, 
-};
+use axum::{Json, Router, http::StatusCode, response::IntoResponse, routing::post};
 use utoipa;
 
 // use traffic_controller::format::scn::to_scn_format;
 use traffic_tools_rs::common::converters::to_scn_format;
 
-
+use crate::shared::ApiError;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use crate::shared::ApiError;
-
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ScnRequest {
@@ -39,10 +31,7 @@ pub struct ScnResponse {
     ),
     tag = "scn"
 )]
-pub async fn generate_scn(
-    Json(req): Json<ScnRequest>,
-) -> Result<impl IntoResponse, ApiError> {
-    
+pub async fn generate_scn(Json(req): Json<ScnRequest>) -> Result<impl IntoResponse, ApiError> {
     if req.input.is_empty() {
         return Err(ApiError::input_cant_be_empty());
     }
@@ -51,18 +40,17 @@ pub async fn generate_scn(
         return Err(ApiError::bad_request("Только ASCII символы"));
     }
 
-    if req.input.len() > 32 { 
+    if req.input.len() > 32 {
         return Err(ApiError::bad_request("Максимум 32 символа"));
     }
 
     let response = ScnResponse {
         output: to_scn_format(&req.input),
     };
-    
+
     Ok((StatusCode::OK, Json(response)))
 }
 
 pub fn router() -> Router {
     Router::new().route("/", post(generate_scn))
 }
-

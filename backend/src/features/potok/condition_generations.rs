@@ -1,20 +1,10 @@
-use axum::{
-    Json,
-    response::IntoResponse,
-    http::StatusCode,
-    Router,
-    routing::post,
-};
+use axum::{Json, Router, http::StatusCode, response::IntoResponse, routing::post};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::shared::ApiError;
 // use traffic_controller::potok::conditions::{parse_input_expression, to_condition_string};
-use traffic_tools_rs::potok::conditions::{ 
-    parse_input_expression,
-    to_condition_string,
- };
-
+use traffic_tools_rs::potok::conditions::{parse_input_expression, to_condition_string};
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct PotokConditionRequest {
@@ -46,13 +36,8 @@ fn generate_tlc_condition_string(string: &str) -> Result<String, String> {
 pub async fn generate_condition(
     Json(req): Json<PotokConditionRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    
     generate_tlc_condition_string(&req.input)
-        .map(|output| {
-            (StatusCode::OK, Json(PotokConditionResponse {
-                output,
-            }))
-        })
+        .map(|output| (StatusCode::OK, Json(PotokConditionResponse { output })))
         .map_err(|_| ApiError::bad_request("Некорректное условие"))
 }
 
